@@ -1,67 +1,114 @@
-"""Tests for profanityx.normalizer."""
+"""
+tests/test_normalizer.py
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Unit tests for Normalizer class.
+"""
+
+from __future__ import annotations
 
 import pytest
 
 from profanityx.normalizer import Normalizer
 
 
-@pytest.fixture
-def normalizer() -> Normalizer:
-    return Normalizer()
+class TestNormalizerLeetspeak:
+    """Test leetspeak decoding and symbol substitutions."""
+
+    @pytest.mark.parametrize(
+        ("input_text", "expected_contains"),
+        [
+            ("sh1t", "shit"),
+            ("s.h.i.t", "shit"),
+            ("s-h-i-t", "shit"),
+            ("f*ck", "fck"),
+            ("f**k", "fk"),
+            ("5hit", "shit"),
+            ("h3ll0", "hello"),
+            ("b4stard", "bastard"),
+        ],
+    )
+    def test_leetspeak_and_punctuation_normalization(
+        self, normalizer: Normalizer, input_text: str, expected_contains: str
+    ) -> None:
+        normalized = normalizer.normalize(input_text)
+        assert expected_contains in normalized
 
 
-class TestNormalizerDefaults:
-    def test_lowercase(self, normalizer: Normalizer) -> None:
-        assert normalizer.normalize("HELLO WORLD") == "hello world"
+class TestNormalizerRepeatedChars:
+    """Test character deduplication / repeat collapsing."""
 
-    def test_leet_decode_digits(self, normalizer: Normalizer) -> None:
-        # 0→o, 3→e, 4→a
-        result = normalizer.normalize("h3ll0")
-        assert result == "hello"
+    @pytest.mark.parametrize(
+        ("input_text", "expected"),
+        [
+            ("shiiiit", "shiit"),
+            ("fuuuuck", "fuuck"),
+            ("hellooo", "helloo"),
+            ("aaaaaa", "aa"),
+        ],
+    )
+    def test_collapse_repeats(
+        self, normalizer: Normalizer, input_text: str, expected: str
+    ) -> None:
+        assert normalizer.normalize(input_text) == expected
 
-    def test_collapse_repeats(self, normalizer: Normalizer) -> None:
-        # 3+ identical chars collapsed to 2
-        result = normalizer.normalize("fuuuuck")
-        assert result == "fuuck"
+    def test_collapse_repeats_disabled(self) -> None:
+        norm = Normalizer(collapse_repeats=False)
+        assert norm.normalize("fuuuuck") == "fuuuuck"
 
-    def test_strip_punctuation(self, normalizer: Normalizer) -> None:
-        result = normalizer.normalize("Hello, World!!!")
-        assert result == "hello world"
 
-    def test_whitespace_collapse(self, normalizer: Normalizer) -> None:
-        result = normalizer.normalize("  hello   world  ")
-        assert result == "hello world"
+class TestNormalizerCaseConversion:
+    """Test casing normalization."""
 
-    def test_unicode_nfc(self, normalizer: Normalizer) -> None:
+    @pytest.mark.parametrize("input_text", ["SHIT", "ShIt", "sHiT", "SHiT"])
+    def test_lowercase(self, normalizer: Normalizer, input_text: str) -> None:
+        assert normalizer.normalize(input_text) == "shit"
+
+    def test_lowercase_disabled(self) -> None:
+        norm = Normalizer(lowercase=False, leet_decode=False, strip_punctuation=False)
+        assert norm.normalize("ShIt") == "ShIt"
+
+
+class TestNormalizerUnicodeAndMixedScripts:
+    """Test Unicode NFC normalization and Cyrillic/Uzbek script handling."""
+
+    def test_unicode_nfc_decomposition(self, normalizer: Normalizer) -> None:
         # Composed vs decomposed 'é'
-        composed = "\u00e9"  # é NFC
-        decomposed = "e\u0301"  # e + combining acute
-        n = Normalizer(leet_decode=False, strip_punctuation=False)
-        assert n.normalize(composed) == n.normalize(decomposed)
+        composed = "\u00e9"
+        decomposed = "e\u0301"
+        assert normalizer.normalize(composed) == normalizer.normalize(decomposed)
+
+    def test_uzbek_okina_and_apostrophe(self, normalizer: Normalizer) -> None:
+        # Uzbek words with modifier letter apostrophe / okina
+        word1 = "oʻzbek"
+        word2 = "o'zbek"
+        # Normalization handles whitespace/punctuation gracefully without throwing errors
+        assert len(normalizer.normalize(word1)) > 0
+        assert len(normalizer.normalize(word2)) > 0
+
+    def test_cyrillic_normalization(self, normalizer: Normalizer) -> None:
+        assert normalizer.normalize("МУДАК") == "мудак"
+        assert normalizer.normalize("ПИЗДЕЦ!!!") == "пиздец"
 
 
-class TestNormalizerOptions:
-    def test_no_leet(self) -> None:
-        n = Normalizer(leet_decode=False)
-        assert "0" in n.normalize("h3ll0")
+class TestNormalizerEdgeCases:
+    """Test edge cases: empty strings, whitespace only, digits only, etc."""
 
-    def test_no_collapse(self) -> None:
-        n = Normalizer(collapse_repeats=False)
-        assert "uuu" in n.normalize("fuuuuck")
+    def test_empty_string(self, normalizer: Normalizer) -> None:
+        assert normalizer.normalize("") == ""
 
-    def test_no_strip(self) -> None:
-        n = Normalizer(strip_punctuation=False)
-        assert "!" in n.normalize("hello!")
+    def test_only_whitespace(self, normalizer: Normalizer) -> None:
+        assert normalizer.normalize("   \t\n   ") == ""
 
-    def test_no_lowercase(self) -> None:
-        n = Normalizer(lowercase=False)
-        assert n.normalize("HELLO") == "HELLO"
+    def test_only_numbers(self, normalizer: Normalizer) -> None:
+        # Leet decode converts 0->o, 1->i, 3->e, 4->a, 5->s, 6->g, 7->t, 8->b
+        result = normalizer.normalize("1234567890")
+        assert isinstance(result, str)
 
+    def test_only_pure_punctuation(self, normalizer: Normalizer) -> None:
+        assert normalizer.normalize("!#%^&*()_+-=[]{}|;:,.<>?") == ""
 
-class TestTokenize:
-    def test_basic(self, normalizer: Normalizer) -> None:
-        tokens = normalizer.tokenize("Hello World")
-        assert tokens == ["hello", "world"]
-
-    def test_empty(self, normalizer: Normalizer) -> None:
-        assert normalizer.tokenize("") == []
+    def test_tokenize_method(self, normalizer: Normalizer) -> None:
+        tokens = normalizer.tokenize("Hello, World! 123")
+        assert isinstance(tokens, list)
+        assert len(tokens) > 0

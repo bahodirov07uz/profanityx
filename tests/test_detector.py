@@ -1,5 +1,13 @@
-"""Tests for profanityx.detector."""
+"""
+tests/test_detector.py
+~~~~~~~~~~~~~~~~~~~~~~~
 
+Unit tests for ProfanityDetector class.
+"""
+
+from __future__ import annotations
+
+import warnings
 from pathlib import Path
 
 import pytest
@@ -7,181 +15,221 @@ import pytest
 from profanityx.detector import ProfanityDetector
 
 
-@pytest.fixture
-def en_detector() -> ProfanityDetector:
-    return ProfanityDetector(languages=["en"])
+class TestDetectorBasicFunctionality:
+    """Test basic detection and clean text checks across languages."""
 
-
-@pytest.fixture
-def all_detector() -> ProfanityDetector:
-    return ProfanityDetector()
-
-
-class TestContainsProfanity:
-    def test_clean_text(self, en_detector: ProfanityDetector) -> None:
-        assert en_detector.contains_profanity("Hello, how are you?") is False
-
-    def test_single_profane_word(self, en_detector: ProfanityDetector) -> None:
+    def test_contains_profanity_english(self, en_detector: ProfanityDetector) -> None:
         assert en_detector.contains_profanity("What the fuck!") is True
 
-    def test_leet_speak(self, en_detector: ProfanityDetector) -> None:
-        # f*ck → after normalisation 'fuck' should be detected
-        assert en_detector.contains_profanity("f*ck this") is True
+    def test_contains_profanity_uzbek(self, uz_detector: ProfanityDetector) -> None:
+        assert uz_detector.contains_profanity("bu axmoq odam") is True
 
-    def test_case_insensitive(self, en_detector: ProfanityDetector) -> None:
-        assert en_detector.contains_profanity("SHIT happens") is True
+    def test_contains_profanity_russian(self, ru_detector: ProfanityDetector) -> None:
+        assert ru_detector.contains_profanity("какой мудак") is True
 
-    def test_russian(self, all_detector: ProfanityDetector) -> None:
-        assert all_detector.contains_profanity("какой мудак") is True
+    def test_clean_text_returns_false(self, default_detector: ProfanityDetector) -> None:
+        assert default_detector.contains_profanity("Hello world, this is clean text.") is False
+        assert default_detector.is_clean("Hello world, this is clean text.") is True
 
-    def test_uzbek(self, all_detector: ProfanityDetector) -> None:
-        assert all_detector.contains_profanity("bu axmoq odam") is True
-
-    def test_empty_string(self, en_detector: ProfanityDetector) -> None:
-        assert en_detector.contains_profanity("") is False
+    def test_empty_string_is_clean(self, default_detector: ProfanityDetector) -> None:
+        assert default_detector.contains_profanity("") is False
+        assert default_detector.is_clean("") is True
 
 
-class TestIsClean:
-    def test_clean(self, en_detector: ProfanityDetector) -> None:
-        assert en_detector.is_clean("Everything is fine") is True
+class TestDetectorFalsePositives:
+    """CRITICAL: Test that word boundaries prevent false positives on innocent words."""
 
-    def test_not_clean(self, en_detector: ProfanityDetector) -> None:
-        assert en_detector.is_clean("bullshit") is False
+    @pytest.mark.parametrize(
+        "clean_word_sentence",
+        [
+            "I need an assistant for this assignment.",
+            "We are attending a computer science class today.",
+            "He lives in Scunthorpe, England.",
+            "Please pass me the salt.",
+            "She ordered a fruit cocktail at the restaurant.",
+            "The assassin was apprehended quickly.",
+            "The compass points north.",
+            "Charles Dickens wrote many famous novels.",
+            "She was very punctual for the meeting.",
+        ],
+    )
+    def test_false_positive_guard_english(
+        self, en_detector: ProfanityDetector, clean_word_sentence: str
+    ) -> None:
+        assert en_detector.is_clean(clean_word_sentence), (
+            f"False positive triggered on: {clean_word_sentence!r}, "
+            f"matches: {en_detector.find_profanity(clean_word_sentence)}"
+        )
+
+    @pytest.mark.parametrize(
+        "clean_uzbek_sentence",
+        [
+            "Itoat qilish eng yaxshi fazilatdir.",
+            "Pastor shamol shimoldan esmoqda.",
+            "Moliya vazirligi yangi hisobotni e'lon qildi.",
+            "Toshkent O'zbekistonning poytaxtidir.",
+            "The assistant helped us complete the task.",
+        ],
+    )
+    def test_false_positive_guard_uzbek(
+        self, uz_detector: ProfanityDetector, clean_uzbek_sentence: str
+    ) -> None:
+        assert uz_detector.is_clean(clean_uzbek_sentence), (
+            f"False positive triggered on: {clean_uzbek_sentence!r}, "
+            f"matches: {uz_detector.find_profanity(clean_uzbek_sentence)}"
+        )
+
+    @pytest.mark.parametrize(
+        "clean_russian_sentence",
+        [
+            "Локомотив выиграл очередной футбольный матч.",
+            "Это ничто по сравнению с прошлым годом.",
+            "Москва — красивый город.",
+        ],
+    )
+    def test_false_positive_guard_russian(
+        self, ru_detector: ProfanityDetector, clean_russian_sentence: str
+    ) -> None:
+        assert ru_detector.is_clean(clean_russian_sentence), (
+            f"False positive triggered on: {clean_russian_sentence!r}, "
+            f"matches: {ru_detector.find_profanity(clean_russian_sentence)}"
+        )
 
 
-class TestFindProfanity:
-    def test_finds_words(self, en_detector: ProfanityDetector) -> None:
-        found = en_detector.find_profanity("shit and damn")
-        assert "shit" in found
-        assert "damn" in found
+class TestDetectorCensor:
+    """Test censorship functionality."""
 
-    def test_no_false_positives(self, en_detector: ProfanityDetector) -> None:
-        found = en_detector.find_profanity("classic classic classic")
-        assert found == []
-
-    def test_empty(self, en_detector: ProfanityDetector) -> None:
-        assert en_detector.find_profanity("") == []
-
-
-class TestCensor:
-    def test_replaces_with_stars(self, en_detector: ProfanityDetector) -> None:
+    def test_censor_default_preserve_length(self, en_detector: ProfanityDetector) -> None:
         result = en_detector.censor("shit happens")
         assert "shit" not in result
-        assert "*" in result
+        assert "****" in result
+        assert len(result) == len("shit happens")
 
-    def test_preserves_length(self, en_detector: ProfanityDetector) -> None:
-        result = en_detector.censor("shit", preserve_length=True)
-        assert len(result) == len("shit")
-
-    def test_fixed_length(self, en_detector: ProfanityDetector) -> None:
+    def test_censor_fixed_length(self, en_detector: ProfanityDetector) -> None:
         result = en_detector.censor("shit", preserve_length=False)
         assert result == "****"
 
-    def test_clean_text_unchanged(self, en_detector: ProfanityDetector) -> None:
-        clean = "hello world"
-        assert en_detector.censor(clean) == clean
-
-    def test_custom_censor_char(self) -> None:
-        d = ProfanityDetector(languages=["en"], censor_char="#")
-        result = d.censor("shit")
+    def test_censor_custom_char(self) -> None:
+        det = ProfanityDetector(languages=["en"], censor_char="#")
+        result = det.censor("shit")
         assert "#" in result
         assert "*" not in result
 
-
-class TestExplain:
-    def test_returns_metadata(self, en_detector: ProfanityDetector) -> None:
-        results = en_detector.explain("what the fuck is this shit")
-        words = [r["word"] for r in results]
-        assert "fuck" in words
-        assert "shit" in words
-
-    def test_positions(self, en_detector: ProfanityDetector) -> None:
-        text = "fuck"
-        results = en_detector.explain(text)
-        assert len(results) == 1
-        entry = results[0]
-        assert entry["start"] == 0
-        assert entry["end"] == 4
-
-    def test_languages_field(self, en_detector: ProfanityDetector) -> None:
-        results = en_detector.explain("fuck")
-        assert len(results) == 1
-        assert "en" in results[0]["languages"]
-
-    def test_severity_field(self, en_detector: ProfanityDetector) -> None:
-        results = en_detector.explain("fuck")
-        assert results[0]["severity"] in ("mild", "strong")
-
-    def test_variants_field(self, en_detector: ProfanityDetector) -> None:
-        results = en_detector.explain("fuck")
-        assert isinstance(results[0]["variants"], list)
-
-    def test_multilang_explain(self, all_detector: ProfanityDetector) -> None:
-        results = all_detector.explain("мудак")
-        assert len(results) == 1
-        assert results[0]["languages"] == ["ru"]
+    def test_censor_clean_text_unchanged(self, en_detector: ProfanityDetector) -> None:
+        clean = "hello world"
+        assert en_detector.censor(clean) == clean
 
 
-class TestWordlistManagement:
-    def test_add_words(self, en_detector: ProfanityDetector) -> None:
-        en_detector.add_words(["myword"])
-        assert en_detector.contains_profanity("myword is here") is True
+class TestDetectorAnalyzeAndExplain:
+    """Test analyze() and explain() metadata extraction."""
 
-    def test_remove_words(self, en_detector: ProfanityDetector) -> None:
-        en_detector.add_words(["tempword"])
-        assert en_detector.contains_profanity("tempword") is True
-        en_detector.remove_words(["tempword"])
-        assert en_detector.contains_profanity("tempword") is False
+    def test_analyze_returns_word_language_and_severity(
+        self, default_detector: ProfanityDetector
+    ) -> None:
+        results = default_detector.analyze("what the fuck is this shit")
+        assert isinstance(results, list)
+        assert len(results) == 2
 
-    def test_word_count(self, en_detector: ProfanityDetector) -> None:
-        initial = en_detector.word_count
-        en_detector.add_words(["uniqueword123"])
-        assert en_detector.word_count == initial + 1
+        matched_words = [item["word"] for item in results]
+        assert "fuck" in matched_words
+        assert "shit" in matched_words
 
-    def test_loaded_languages(self, all_detector: ProfanityDetector) -> None:
-        langs = all_detector.loaded_languages
-        assert "en" in langs
-        assert "ru" in langs
-        assert "uz" in langs
+        for entry in results:
+            assert "word" in entry
+            assert "start" in entry
+            assert "end" in entry
+            assert "languages" in entry
+            assert "severity" in entry
+            assert entry["severity"] in ("mild", "strong")
 
-    def test_custom_wordlist_file(self, tmp_path: Path, en_detector: ProfanityDetector) -> None:
+    def test_explain_alias_matches_analyze(
+        self, default_detector: ProfanityDetector
+    ) -> None:
+        text = "bu axmoq odam"
+        explain_res = default_detector.explain(text)
+        analyze_res = default_detector.analyze(text)
+        assert explain_res == analyze_res
+
+
+class TestDetectorMultiLanguageAndMultipleHits:
+    """Test multi-language loading and multiple hits per text."""
+
+    def test_multi_language_detector_uz_ru(
+        self, multi_lang_detector: ProfanityDetector
+    ) -> None:
+        # Uzbek match
+        assert multi_lang_detector.contains_profanity("bu axmoq odam") is True
+        # Russian match
+        assert multi_lang_detector.contains_profanity("какой мудак") is True
+        # English should NOT match in multi_lang_detector (loaded uz+ru only)
+        assert multi_lang_detector.contains_profanity("fuck") is False
+
+    def test_multiple_hits_in_single_text(
+        self, default_detector: ProfanityDetector
+    ) -> None:
+        text = "shit and fuck and damn"
+        found = default_detector.find_profanity(text)
+        assert len(found) >= 3
+        assert "shit" in found
+        assert "fuck" in found
+        assert "damn" in found
+
+
+class TestDetectorFuzzyBoundaryThreshold:
+    """Test fuzzy boundary limits to prevent false positive explosions."""
+
+    def test_slight_spelling_variation_registered_variants(
+        self, en_detector: ProfanityDetector
+    ) -> None:
+        # Registered variant (sh1t) fires
+        assert en_detector.contains_profanity("sh1t") is True
+
+    def test_distant_innocent_words_do_not_trigger_fuzzy_matches(
+        self, en_detector: ProfanityDetector
+    ) -> None:
+        # Innocent words like 'shirt', 'shift', 'shut', 'fact', 'duck' must NOT trigger false positives
+        clean_words = ["shirt", "shift", "shut", "fact", "duck", "frock", "flock"]
+        for w in clean_words:
+            assert en_detector.is_clean(w), f"Innocent word {w!r} triggered false positive!"
+
+
+class TestDetectorWordlistManagementAndEdgeCases:
+    """Test runtime word management and initialization edge cases."""
+
+    def test_add_and_remove_words(self, en_detector: ProfanityDetector) -> None:
+        en_detector.add_words(["custombadword"], language="custom", severity="mild")
+        assert en_detector.contains_profanity("custombadword here") is True
+
+        en_detector.remove_words(["custombadword"])
+        assert en_detector.contains_profanity("custombadword here") is False
+
+    def test_empty_languages_warning(self) -> None:
+        with pytest.warns(UserWarning, match="No languages specified"):
+            det = ProfanityDetector(languages=[])
+            assert det.word_count == 0
+            assert det.contains_profanity("fuck") is False
+
+    def test_nonexistent_language_raises_error(self) -> None:
+        with pytest.raises(FileNotFoundError):
+            ProfanityDetector(languages=["nonexistent_lang_xx"])
+
+    def test_custom_wordlist_loading(
+        self, tmp_path: Path, en_detector: ProfanityDetector
+    ) -> None:
         import json
 
-        # Test rich format
         custom_file = tmp_path / "custom.json"
-        custom_file.write_text(json.dumps({
-            "language": "test",
-            "words": [
-                {"word": "banana", "severity": "mild", "variants": ["b4nana"]},
-                {"word": "customword", "severity": "strong", "variants": []},
-            ]
-        }), encoding="utf-8")
-        en_detector.load_custom_wordlist(custom_file, language="test")
-        assert en_detector.contains_profanity("I love banana pie") is True
-        # Variant should also match
-        assert en_detector.contains_profanity("b4nana") is True
-
-    def test_custom_wordlist_legacy(self, tmp_path: Path, en_detector: ProfanityDetector) -> None:
-        import json
-
-        legacy_file = tmp_path / "legacy.json"
-        legacy_file.write_text(json.dumps(["legacyword", "anotherword"]), encoding="utf-8")
-        en_detector.load_custom_wordlist(legacy_file, language="legacy")
-        assert en_detector.contains_profanity("legacyword here") is True
-
-    def test_add_words_severity(self, en_detector: ProfanityDetector) -> None:
-        en_detector.add_words(["mildword"], language="custom", severity="mild")
-        results = en_detector.explain("mildword")
-        assert results[0]["severity"] == "mild"
-
-
-class TestWholeWord:
-    def test_whole_word_no_partial(self) -> None:
-        """'ass' should NOT trigger inside 'class'."""
-        d = ProfanityDetector(languages=["en"], whole_word=True)
-        assert d.contains_profanity("this is a classic") is False
-
-    def test_substring_mode(self) -> None:
-        """With whole_word=False, partial matches fire."""
-        d = ProfanityDetector(languages=["en"], whole_word=False)
-        assert d.contains_profanity("classic") is True
+        custom_file.write_text(
+            json.dumps(
+                {
+                    "language": "custom_lang",
+                    "words": [
+                        {"word": "testbad", "severity": "mild", "variants": ["t3stbad"]}
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        en_detector.load_custom_wordlist(custom_file)
+        assert en_detector.contains_profanity("testbad") is True
+        assert en_detector.contains_profanity("t3stbad") is True

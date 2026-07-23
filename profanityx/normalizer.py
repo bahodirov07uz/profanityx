@@ -91,10 +91,10 @@ class Normalizer:
         # Step 3: drop punctuation *sandwiched between* word chars so that
         # obfuscation like "f*ck" → "fck" (not "f ck") is handled.
         text = re.sub(r"(?<=\w)[^\w\s]+(?=\w)", "", text, flags=re.UNICODE)
-        if self.strip_punctuation:
-            text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
         if self.leet_decode:
             text = self._apply_leet(text)
+        if self.strip_punctuation:
+            text = re.sub(r"[^\w\s]|_", " ", text, flags=re.UNICODE)
         if self.collapse_repeats:
             text = _REPEATED_CHARS.sub(r"\1\1", text)
         # Collapse multiple spaces

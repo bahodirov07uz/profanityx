@@ -1,10 +1,10 @@
-name: Tests
+name: Tests & Coverage
 
 on:
   push:
     branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   test:
@@ -38,8 +38,11 @@ jobs:
       - name: Type-check with mypy
         run: mypy profanityx
 
-      - name: Run tests with coverage
-        run: pytest --cov=profanityx --cov-report=xml
+      - name: Run wordlist validator
+        run: python scripts/validate_wordlists.py
+
+      - name: Run tests with coverage (fail if under 85%)
+        run: pytest --cov=profanityx --cov-report=term-missing --cov-report=xml --cov-fail-under=85
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

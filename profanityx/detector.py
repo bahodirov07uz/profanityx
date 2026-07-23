@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import re
+import warnings
 from pathlib import Path
 from typing import Iterable, NamedTuple
 
@@ -152,7 +153,17 @@ class ProfanityDetector:
         # canonical_word → WordEntry  (variants also point here)
         self._words: dict[str, WordEntry] = {}
 
-        langs = list(languages) if languages is not None else list(SUPPORTED_LANGUAGES)
+        if languages is not None:
+            langs = list(languages)
+            if not langs:
+                warnings.warn(
+                    "No languages specified. ProfanityDetector initialized with 0 words.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+        else:
+            langs = list(SUPPORTED_LANGUAGES)
+
         for lang in langs:
             self.load_language(lang)
 
@@ -330,6 +341,10 @@ class ProfanityDetector:
                 }
             )
         return results
+
+    def analyze(self, text: str) -> list[dict[str, object]]:
+        """Alias for :meth:`explain`."""
+        return self.explain(text)
 
     def is_clean(self, text: str) -> bool:
         """Convenience inverse of :meth:`contains_profanity`."""
