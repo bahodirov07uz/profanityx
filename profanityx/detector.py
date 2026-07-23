@@ -7,6 +7,7 @@ Core profanity detection engine.
 Features
 --------
 * Multi-language support (en, uz, ru, and any custom JSON wordlist).
+* Rich wordlist format: {language, words:[{word, severity, variants}]}.
 * Configurable matching: whole-word, substring, or regex.
 * Censor / redact matching words.
 * Async-friendly (pure Python, no blocking I/O at detection time).
@@ -18,7 +19,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, NamedTuple
 
 from profanityx.normalizer import Normalizer
 
@@ -30,9 +31,37 @@ _WORDLIST_DIR = Path(__file__).parent / "wordlists"
 # Languages bundled with the library
 SUPPORTED_LANGUAGES: frozenset[str] = frozenset({"en", "uz", "ru"})
 
+# Valid severity levels
+SEVERITY_LEVELS: frozenset[str] = frozenset({"mild", "strong"})
 
-def _load_wordlist(language: str) -> list[str]:
-    """Load a bundled wordlist JSON file by language code."""
+
+class WordEntry(NamedTuple):
+    """A single entry loaded from a rich wordlist."""
+
+    word: str
+    severity: str  # "mild" | "strong"
+    variants: list[str]
+    language: str
+
+
+def _load_wordlist(language: str) -> list[WordEntry]:
+    """Load a bundled wordlist JSON file by language code.
+
+    Supports two formats:
+
+    **Rich format** (preferred)::
+
+        {
+          "language": "en",
+          "words": [
+            {"word": "...", "severity": "mild"|"strong", "variants": ["..."]}
+          ]
+        }
+
+    **Legacy format** (plain array, for backward-compatibility)::
+
+        ["word1", "word2", ...]
+    """
     path = _WORDLIST_DIR / f"{language}.json"
     if not path.exists():
         raise FileNotFoundError(
@@ -41,9 +70,39 @@ def _load_wordlist(language: str) -> list[str]:
         )
     with path.open(encoding="utf-8") as fh:
         data = json.load(fh)
-    if not isinstance(data, list):
-        raise ValueError(f"Wordlist at {path} must be a JSON array of strings.")
-    return [w.lower() for w in data]
+
+    # ── Rich format ────────────────────────────────────────────────────────
+    if isinstance(data, dict):
+        raw_words = data.get("words")
+        if not isinstance(raw_words, list):
+            raise ValueError(
+                f"Wordlist at {path}: 'words' key must be a JSON array."
+            )
+        entries: list[WordEntry] = []
+        for item in raw_words:
+            if not isinstance(item, dict) or "word" not in item:
+                raise ValueError(
+                    f"Wordlist at {path}: each entry must be an object with a 'word' key."
+                )
+            word = str(item["word"]).lower()
+            severity = str(item.get("severity", "strong"))
+            if severity not in SEVERITY_LEVELS:
+                severity = "strong"
+            variants = [str(v).lower() for v in item.get("variants", [])]
+            entries.append(WordEntry(word=word, severity=severity, variants=variants, language=language))
+        return entries
+
+    # ── Legacy format: plain array of strings ─────────────────────────────
+    if isinstance(data, list):
+        return [
+            WordEntry(word=str(w).lower(), severity="strong", variants=[], language=language)
+            for w in data
+        ]
+
+    raise ValueError(
+        f"Wordlist at {path} must be either a JSON object (rich format) "
+        "or a JSON array (legacy format)."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -90,8 +149,8 @@ class ProfanityDetector:
         self._whole_word = whole_word
         self._censor_char = censor_char
 
-        # word → set of languages that flag it
-        self._words: dict[str, set[str]] = {}
+        # canonical_word → WordEntry  (variants also point here)
+        self._words: dict[str, WordEntry] = {}
 
         langs = list(languages) if languages is not None else list(SUPPORTED_LANGUAGES)
         for lang in langs:
@@ -105,9 +164,8 @@ class ProfanityDetector:
 
     def load_language(self, language: str) -> None:
         """Load (or reload) a bundled wordlist for *language*."""
-        words = _load_wordlist(language)
-        for word in words:
-            self._words.setdefault(word, set()).add(language)
+        entries = _load_wordlist(language)
+        self._register_entries(entries)
         self._build_pattern()
 
     def load_custom_wordlist(
@@ -116,28 +174,77 @@ class ProfanityDetector:
         """
         Load an external JSON wordlist file.
 
-        The file must contain a JSON array of strings.
+        Supports both the **rich format**::
+
+            {
+              "language": "custom",
+              "words": [{"word": "...", "severity": "mild", "variants": [...]}]
+            }
+
+        and the **legacy format** (plain JSON array of strings).
 
         Parameters
         ----------
         path:
             Filesystem path to the JSON file.
         language:
-            An arbitrary label used in :meth:`explain`.
+            An arbitrary label used in :meth:`explain` (used for legacy format).
         """
+        # Reuse the same parser used for bundled wordlists.
         path = Path(path)
+        # Temporarily copy file to a temp-named path and call _load_wordlist
+        # would be awkward — instead replicate the logic inline.
         with path.open(encoding="utf-8") as fh:
             data = json.load(fh)
-        if not isinstance(data, list):
-            raise ValueError("Custom wordlist must be a JSON array of strings.")
-        for word in data:
-            self._words.setdefault(word.lower(), set()).add(language)
+
+        if isinstance(data, dict):
+            # Rich format — language field comes from the file itself.
+            lang_label = data.get("language", language)
+            raw_words = data.get("words", [])
+            entries = [
+                WordEntry(
+                    word=str(item["word"]).lower(),
+                    severity=str(item.get("severity", "strong")),
+                    variants=[str(v).lower() for v in item.get("variants", [])],
+                    language=str(lang_label),
+                )
+                for item in raw_words
+                if isinstance(item, dict) and "word" in item
+            ]
+        elif isinstance(data, list):
+            entries = [
+                WordEntry(word=str(w).lower(), severity="strong", variants=[], language=language)
+                for w in data
+            ]
+        else:
+            raise ValueError("Custom wordlist must be a JSON object (rich) or array (legacy).")
+
+        self._register_entries(entries)
         self._build_pattern()
 
-    def add_words(self, words: Iterable[str], *, language: str = "custom") -> None:
-        """Add individual words to the active word set at runtime."""
-        for word in words:
-            self._words.setdefault(word.lower(), set()).add(language)
+    def add_words(
+        self,
+        words: Iterable[str],
+        *,
+        language: str = "custom",
+        severity: str = "strong",
+    ) -> None:
+        """Add individual words to the active word set at runtime.
+
+        Parameters
+        ----------
+        words:
+            Iterable of word strings to add.
+        language:
+            Language label attached to the words.
+        severity:
+            ``"mild"`` or ``"strong"`` (default).
+        """
+        entries = [
+            WordEntry(word=w.lower(), severity=severity, variants=[], language=language)
+            for w in words
+        ]
+        self._register_entries(entries)
         self._build_pattern()
 
     def remove_words(self, words: Iterable[str]) -> None:
@@ -197,21 +304,29 @@ class ProfanityDetector:
         Return detailed match information for each profane word detected.
 
         Each entry is a dict with keys:
-        ``word`` (str), ``start`` (int), ``end`` (int), ``languages`` (list[str]).
+
+        * ``word`` (str) — normalized matched word
+        * ``start`` (int) — start offset in normalized text
+        * ``end`` (int) — end offset in normalized text
+        * ``languages`` (list[str]) — language(s) that flag this word
+        * ``severity`` (str) — ``"mild"`` or ``"strong"``
+        * ``variants`` (list[str]) — known obfuscation variants
         """
         if not self._pattern:
             return []
         normalized = self._normalizer.normalize(text)
         results: list[dict[str, object]] = []
         for match in self._pattern.finditer(normalized):
-            word = match.group(0)
-            langs = sorted(self._words.get(word, set()))
+            matched = match.group(0).lower()
+            entry = self._words.get(matched)
             results.append(
                 {
-                    "word": word,
+                    "word": matched,
                     "start": match.start(),
                     "end": match.end(),
-                    "languages": langs,
+                    "languages": [entry.language] if entry else [],
+                    "severity": entry.severity if entry else "strong",
+                    "variants": entry.variants if entry else [],
                 }
             )
         return results
@@ -232,14 +347,33 @@ class ProfanityDetector:
     @property
     def loaded_languages(self) -> list[str]:
         """Languages currently contributing to the active word set."""
-        langs: set[str] = set()
-        for lang_set in self._words.values():
-            langs |= lang_set
-        return sorted(langs)
+        return sorted({entry.language for entry in self._words.values()})
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _register_entries(self, entries: list[WordEntry]) -> None:
+        """Register *entries* into the internal word table.
+
+        Both the canonical word and all its variants are registered,
+        each pointing to the same ``WordEntry`` object so that
+        :meth:`explain` can look up severity/variants for any match.
+
+        Variants are passed through the normalizer before registration so that
+        obfuscated strings like ``a$$`` don't degenerate into single-char keys
+        that would cause false positives.
+        """
+        for entry in entries:
+            self._words[entry.word] = entry
+            for raw_variant in entry.variants:
+                # Normalize the variant the same way incoming text is normalized.
+                normalized_variant = self._normalizer.normalize(raw_variant)
+                # Skip degenerate results: empty string or single non-word char.
+                if len(normalized_variant) < 2:
+                    continue
+                if normalized_variant not in self._words:
+                    self._words[normalized_variant] = entry
 
     def _build_pattern(self) -> None:
         """Recompile the master regex from the current word set."""

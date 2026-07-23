@@ -1,51 +1,279 @@
-[
-  "sikish",
-  "sikincha",
-  "sikib",
-  "sikibdi",
-  "sikibsan",
-  "amak",
-  "amaki",
-  "qoʻtir",
-  "harom",
-  "haromzoda",
-  "yaramas",
-  "yarmasona",
-  "nomard",
-  "nobakor",
-  "pishang",
-  "pishangi",
-  "axmoq",
-  "axmoqlik",
-  "tentak",
-  "telba",
-  "ahmoq",
-  "besharm",
-  "besharmlik",
-  "buzuq",
-  "buzuqchi",
-  "fohisha",
-  "fahsh",
-  "jallob",
-  "laqqa",
-  "laqqalik",
-  "noʻnoq",
-  "kalvak",
-  "toʻnka",
-  "eshak",
-  "eshaklik",
-  "kuchuk",
-  "murdor",
-  "najas",
-  "iflos",
-  "ifloslik",
-  "sharmsiz",
-  "sharmsizlik",
-  "vahshiy",
-  "razil",
-  "razillik",
-  "tuban",
-  "tubanlik",
-  "lannat",
-  "lannati"
-]
+{
+  "language": "uz",
+  "words": [
+    {
+      "word": "sikish",
+      "severity": "strong",
+      "variants": [
+        "sikincha",
+        "sikib",
+        "sikibdi",
+        "sikibsan"
+      ]
+    },
+    {
+      "word": "amak",
+      "severity": "strong",
+      "variants": [
+        "amaki",
+        "amakini"
+      ]
+    },
+    {
+      "word": "axmoq",
+      "severity": "mild",
+      "variants": [
+        "axmoqlik",
+        "axmoqona"
+      ]
+    },
+    {
+      "word": "ahmoq",
+      "severity": "mild",
+      "variants": [
+        "ahmaqlik",
+        "ahmaqona"
+      ]
+    },
+    {
+      "word": "tentak",
+      "severity": "mild",
+      "variants": [
+        "tentaklik"
+      ]
+    },
+    {
+      "word": "telba",
+      "severity": "mild",
+      "variants": [
+        "telbalik"
+      ]
+    },
+    {
+      "word": "besharm",
+      "severity": "strong",
+      "variants": [
+        "besharmlik",
+        "besharmona"
+      ]
+    },
+    {
+      "word": "harom",
+      "severity": "strong",
+      "variants": [
+        "haromzoda",
+        "haromlik"
+      ]
+    },
+    {
+      "word": "nomard",
+      "severity": "strong",
+      "variants": [
+        "nomardlik",
+        "nobakor"
+      ]
+    },
+    {
+      "word": "yaramas",
+      "severity": "mild",
+      "variants": [
+        "yarmasona",
+        "yaramaslik"
+      ]
+    },
+    {
+      "word": "buzuq",
+      "severity": "strong",
+      "variants": [
+        "buzuqlik",
+        "buzuqchi",
+        "buzuqchilik"
+      ]
+    },
+    {
+      "word": "fohisha",
+      "severity": "strong",
+      "variants": [
+        "fohishalik",
+        "fahsh",
+        "fahshlik"
+      ]
+    },
+    {
+      "word": "jallob",
+      "severity": "strong",
+      "variants": [
+        "jalloblik"
+      ]
+    },
+    {
+      "word": "laqqa",
+      "severity": "mild",
+      "variants": [
+        "laqqalik",
+        "laqqaboz"
+      ]
+    },
+    {
+      "word": "pishang",
+      "severity": "strong",
+      "variants": [
+        "pishangi"
+      ]
+    },
+    {
+      "word": "kalvak",
+      "severity": "mild",
+      "variants": [
+        "kalvaklarcha"
+      ]
+    },
+    {
+      "word": "eshak",
+      "severity": "mild",
+      "variants": [
+        "eshaklik",
+        "eshakning"
+      ]
+    },
+    {
+      "word": "kuchuk",
+      "severity": "mild",
+      "variants": [
+        "kuchuklik"
+      ]
+    },
+    {
+      "word": "noʻnoq",
+      "severity": "mild",
+      "variants": [
+        "nonoq",
+        "nonoqlik"
+      ]
+    },
+    {
+      "word": "toʻnka",
+      "severity": "mild",
+      "variants": [
+        "tonka",
+        "tonkalik"
+      ]
+    },
+    {
+      "word": "iflos",
+      "severity": "strong",
+      "variants": [
+        "ifloslik",
+        "iflosona"
+      ]
+    },
+    {
+      "word": "najas",
+      "severity": "strong",
+      "variants": [
+        "najaslik"
+      ]
+    },
+    {
+      "word": "murdor",
+      "severity": "strong",
+      "variants": [
+        "murdorlik"
+      ]
+    },
+    {
+      "word": "razil",
+      "severity": "strong",
+      "variants": [
+        "razillik",
+        "razilona"
+      ]
+    },
+    {
+      "word": "tuban",
+      "severity": "strong",
+      "variants": [
+        "tubanlik",
+        "tubanona"
+      ]
+    },
+    {
+      "word": "vahshiy",
+      "severity": "strong",
+      "variants": [
+        "vahshiylik",
+        "vahshiyona"
+      ]
+    },
+    {
+      "word": "sharmsiz",
+      "severity": "strong",
+      "variants": [
+        "sharmsizlik"
+      ]
+    },
+    {
+      "word": "obrosiz",
+      "severity": "mild",
+      "variants": [
+        "obro'siz",
+        "obrosizlik"
+      ]
+    },
+    {
+      "word": "lannat",
+      "severity": "strong",
+      "variants": [
+        "lannati",
+        "la'nat",
+        "la'nati"
+      ]
+    },
+    {
+      "word": "qoʻtir",
+      "severity": "mild",
+      "variants": [
+        "qotir",
+        "qoʻtirlik"
+      ]
+    },
+    {
+      "word": "qoʻrslik",
+      "severity": "mild",
+      "variants": [
+        "qors",
+        "qoʻrs"
+      ]
+    },
+    {
+      "word": "dovyurak",
+      "severity": "mild",
+      "variants": [
+        "dovdirab"
+      ]
+    },
+    {
+      "word": "mollik",
+      "severity": "mild",
+      "variants": [
+        "mol"
+      ]
+    },
+    {
+      "word": "itlik",
+      "severity": "mild",
+      "variants": [
+        "it",
+        "itvachcha"
+      ]
+    },
+    {
+      "word": "past",
+      "severity": "mild",
+      "variants": [
+        "pastlik",
+        "pastkash"
+      ]
+    }
+  ]
+}

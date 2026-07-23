@@ -103,10 +103,23 @@ class TestExplain:
         assert entry["start"] == 0
         assert entry["end"] == 4
 
-    def test_languages_field(self, all_detector: ProfanityDetector) -> None:
-        results = all_detector.explain("fuck")
+    def test_languages_field(self, en_detector: ProfanityDetector) -> None:
+        results = en_detector.explain("fuck")
         assert len(results) == 1
         assert "en" in results[0]["languages"]
+
+    def test_severity_field(self, en_detector: ProfanityDetector) -> None:
+        results = en_detector.explain("fuck")
+        assert results[0]["severity"] in ("mild", "strong")
+
+    def test_variants_field(self, en_detector: ProfanityDetector) -> None:
+        results = en_detector.explain("fuck")
+        assert isinstance(results[0]["variants"], list)
+
+    def test_multilang_explain(self, all_detector: ProfanityDetector) -> None:
+        results = all_detector.explain("мудак")
+        assert len(results) == 1
+        assert results[0]["languages"] == ["ru"]
 
 
 class TestWordlistManagement:
@@ -134,10 +147,32 @@ class TestWordlistManagement:
     def test_custom_wordlist_file(self, tmp_path: Path, en_detector: ProfanityDetector) -> None:
         import json
 
+        # Test rich format
         custom_file = tmp_path / "custom.json"
-        custom_file.write_text(json.dumps(["banana", "customword"]))
+        custom_file.write_text(json.dumps({
+            "language": "test",
+            "words": [
+                {"word": "banana", "severity": "mild", "variants": ["b4nana"]},
+                {"word": "customword", "severity": "strong", "variants": []},
+            ]
+        }), encoding="utf-8")
         en_detector.load_custom_wordlist(custom_file, language="test")
         assert en_detector.contains_profanity("I love banana pie") is True
+        # Variant should also match
+        assert en_detector.contains_profanity("b4nana") is True
+
+    def test_custom_wordlist_legacy(self, tmp_path: Path, en_detector: ProfanityDetector) -> None:
+        import json
+
+        legacy_file = tmp_path / "legacy.json"
+        legacy_file.write_text(json.dumps(["legacyword", "anotherword"]), encoding="utf-8")
+        en_detector.load_custom_wordlist(legacy_file, language="legacy")
+        assert en_detector.contains_profanity("legacyword here") is True
+
+    def test_add_words_severity(self, en_detector: ProfanityDetector) -> None:
+        en_detector.add_words(["mildword"], language="custom", severity="mild")
+        results = en_detector.explain("mildword")
+        assert results[0]["severity"] == "mild"
 
 
 class TestWholeWord:

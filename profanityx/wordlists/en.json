@@ -1,57 +1,381 @@
-[
-  "fuck",
-  "shit",
-  "bitch",
-  "asshole",
-  "bastard",
-  "damn",
-  "crap",
-  "piss",
-  "dick",
-  "cock",
-  "pussy",
-  "cunt",
-  "whore",
-  "slut",
-  "motherfucker",
-  "fucker",
-  "fuckhead",
-  "bullshit",
-  "jackass",
-  "dumbass",
-  "ass",
-  "shithead",
-  "idiot",
-  "moron",
-  "retard",
-  "faggot",
-  "dipshit",
-  "prick",
-  "wanker",
-  "twat",
-  "bollocks",
-  "tosser",
-  "arse",
-  "arsehole",
-  "shag",
-  "shagger",
-  "bugger",
-  "friggin",
-  "freaking",
-  "freakin",
-  "goddamn",
-  "damnit",
-  "jerk",
-  "scumbag",
-  "douchebag",
-  "douche",
-  "knob",
-  "bellend",
-  "fck",
-  "sh1t",
-  "sht",
-  "biatch",
-  "fuk",
-  "mofo",
-  "a55"
-]
+{
+  "language": "en",
+  "words": [
+    {
+      "word": "fuck",
+      "severity": "strong",
+      "variants": [
+        "f*ck",
+        "f**k",
+        "fuk",
+        "fvck",
+        "fuuck",
+        "f u c k",
+        "fck",
+        "ph*ck"
+      ]
+    },
+    {
+      "word": "shit",
+      "severity": "strong",
+      "variants": [
+        "sh*t",
+        "sh1t",
+        "sht",
+        "shyt",
+        "5hit",
+        "sh!t"
+      ]
+    },
+    {
+      "word": "bitch",
+      "severity": "strong",
+      "variants": [
+        "b*tch",
+        "b1tch",
+        "biatch",
+        "biotch",
+        "bytch"
+      ]
+    },
+    {
+      "word": "asshole",
+      "severity": "strong",
+      "variants": [
+        "a**hole",
+        "a55hole",
+        "azhole",
+        "a-hole"
+      ]
+    },
+    {
+      "word": "cunt",
+      "severity": "strong",
+      "variants": [
+        "c*nt",
+        "cvnt",
+        "kunt",
+        "c u n t"
+      ]
+    },
+    {
+      "word": "motherfucker",
+      "severity": "strong",
+      "variants": [
+        "motherf*cker",
+        "mf",
+        "mofo",
+        "m0therf*cker"
+      ]
+    },
+    {
+      "word": "cock",
+      "severity": "strong",
+      "variants": [
+        "c*ck",
+        "cok",
+        "c0ck",
+        "kock"
+      ]
+    },
+    {
+      "word": "pussy",
+      "severity": "strong",
+      "variants": [
+        "pu55y",
+        "puss1",
+        "pus5y"
+      ]
+    },
+    {
+      "word": "dick",
+      "severity": "strong",
+      "variants": [
+        "d1ck",
+        "d*ck",
+        "dic"
+      ]
+    },
+    {
+      "word": "bastard",
+      "severity": "strong",
+      "variants": [
+        "b@stard",
+        "b4stard"
+      ]
+    },
+    {
+      "word": "whore",
+      "severity": "strong",
+      "variants": [
+        "wh0re",
+        "wh*re",
+        "h0re"
+      ]
+    },
+    {
+      "word": "slut",
+      "severity": "strong",
+      "variants": [
+        "sl*t",
+        "5lut",
+        "slvt"
+      ]
+    },
+    {
+      "word": "prick",
+      "severity": "strong",
+      "variants": [
+        "pr1ck",
+        "pr*ck"
+      ]
+    },
+    {
+      "word": "wanker",
+      "severity": "strong",
+      "variants": [
+        "w4nker",
+        "w@nker"
+      ]
+    },
+    {
+      "word": "twat",
+      "severity": "strong",
+      "variants": [
+        "tw@t",
+        "tw4t"
+      ]
+    },
+    {
+      "word": "fucker",
+      "severity": "strong",
+      "variants": [
+        "f*cker",
+        "fvcker"
+      ]
+    },
+    {
+      "word": "fuckhead",
+      "severity": "strong",
+      "variants": [
+        "f*ckhead"
+      ]
+    },
+    {
+      "word": "bullshit",
+      "severity": "strong",
+      "variants": [
+        "bull5hit",
+        "bullsh*t",
+        "bs"
+      ]
+    },
+    {
+      "word": "jackass",
+      "severity": "strong",
+      "variants": [
+        "j4ckass",
+        "jack@ss"
+      ]
+    },
+    {
+      "word": "dumbass",
+      "severity": "strong",
+      "variants": [
+        "dumb@ss",
+        "dumb4ss"
+      ]
+    },
+    {
+      "word": "ass",
+      "severity": "mild",
+      "variants": [
+        "a55",
+        "@ss",
+        "a"
+      ]
+    },
+    {
+      "word": "shithead",
+      "severity": "strong",
+      "variants": [
+        "sh1thead",
+        "sh*thead"
+      ]
+    },
+    {
+      "word": "dipshit",
+      "severity": "strong",
+      "variants": [
+        "dip5hit",
+        "dip-shit"
+      ]
+    },
+    {
+      "word": "bollocks",
+      "severity": "mild",
+      "variants": [
+        "bol1ocks",
+        "bolox"
+      ]
+    },
+    {
+      "word": "tosser",
+      "severity": "mild",
+      "variants": [
+        "t0sser"
+      ]
+    },
+    {
+      "word": "arse",
+      "severity": "mild",
+      "variants": [
+        "@rse",
+        "4rse"
+      ]
+    },
+    {
+      "word": "arsehole",
+      "severity": "strong",
+      "variants": [
+        "@rsehole",
+        "4rsehole"
+      ]
+    },
+    {
+      "word": "bugger",
+      "severity": "mild",
+      "variants": [
+        "bugg3r"
+      ]
+    },
+    {
+      "word": "shag",
+      "severity": "mild",
+      "variants": [
+        "sh4g"
+      ]
+    },
+    {
+      "word": "knob",
+      "severity": "mild",
+      "variants": [
+        "kn0b"
+      ]
+    },
+    {
+      "word": "bellend",
+      "severity": "mild",
+      "variants": [
+        "bell-end"
+      ]
+    },
+    {
+      "word": "damn",
+      "severity": "mild",
+      "variants": [
+        "d@mn",
+        "d4mn"
+      ]
+    },
+    {
+      "word": "crap",
+      "severity": "mild",
+      "variants": [
+        "cr@p"
+      ]
+    },
+    {
+      "word": "piss",
+      "severity": "mild",
+      "variants": [
+        "p1ss",
+        "pi55"
+      ]
+    },
+    {
+      "word": "jerk",
+      "severity": "mild",
+      "variants": [
+        "j3rk"
+      ]
+    },
+    {
+      "word": "douchebag",
+      "severity": "mild",
+      "variants": [
+        "d0uchebag",
+        "douche-bag"
+      ]
+    },
+    {
+      "word": "douche",
+      "severity": "mild",
+      "variants": [
+        "d0uche"
+      ]
+    },
+    {
+      "word": "scumbag",
+      "severity": "strong",
+      "variants": [
+        "scum-bag"
+      ]
+    },
+    {
+      "word": "goddamn",
+      "severity": "mild",
+      "variants": [
+        "g0ddamn",
+        "goddamned"
+      ]
+    },
+    {
+      "word": "friggin",
+      "severity": "mild",
+      "variants": [
+        "friggin",
+        "friggen"
+      ]
+    },
+    {
+      "word": "freaking",
+      "severity": "mild",
+      "variants": [
+        "freakin",
+        "freeking"
+      ]
+    },
+    {
+      "word": "idiot",
+      "severity": "mild",
+      "variants": [
+        "1diot",
+        "idi0t"
+      ]
+    },
+    {
+      "word": "moron",
+      "severity": "mild",
+      "variants": [
+        "m0ron"
+      ]
+    },
+    {
+      "word": "retard",
+      "severity": "strong",
+      "variants": [
+        "r3tard",
+        "ret4rd"
+      ]
+    },
+    {
+      "word": "faggot",
+      "severity": "strong",
+      "variants": [
+        "f4ggot",
+        "fagot"
+      ]
+    }
+  ]
+}
