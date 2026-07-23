@@ -1,0 +1,105 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "profanityx"
+version = "0.1.0"
+description = "The best multilingual profanity detection library for Python"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "profanityx contributors" }]
+keywords = [
+  "profanity",
+  "filter",
+  "moderation",
+  "nlp",
+  "text",
+  "multilingual",
+  "content-moderation",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Text Processing :: Linguistic",
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.4",
+  "mypy>=1.10",
+]
+
+[project.urls]
+Homepage      = "https://github.com/bahodirov07uz/profanityx"
+Documentation = "https://github.com/bahodirov07uz/profanityx#readme"
+Repository    = "https://github.com/bahodirov07uz/profanityx"
+"Bug Tracker" = "https://github.com/bahodirov07uz/profanityx/issues"
+Changelog     = "https://github.com/bahodirov07uz/profanityx/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["profanityx*"]
+
+[tool.setuptools.package-data]
+profanityx = ["wordlists/*.json"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths   = ["tests"]
+addopts     = "-v --tb=short --cov=profanityx --cov-report=term-missing"
+
+# ---------------------------------------------------------------------------
+# Coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["profanityx"]
+omit   = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+
+# ---------------------------------------------------------------------------
+# Ruff (linter + formatter)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py39"
+line-length    = 100
+
+[tool.ruff.lint]
+select = [
+  "E", "W",   # pycodestyle
+  "F",        # pyflakes
+  "I",        # isort
+  "UP",       # pyupgrade
+  "B",        # flake8-bugbear
+  "C4",       # flake8-comprehensions
+  "SIM",      # flake8-simplify
+  "ANN",      # flake8-annotations
+]
+ignore = ["ANN101", "ANN102"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["profanityx"]
+
+# ---------------------------------------------------------------------------
+# Mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version      = "3.9"
+strict              = true
+ignore_missing_imports = true
