@@ -3,125 +3,101 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - "v*"          # triggers on v0.1.0, v1.2.3, etc.
-  workflow_dispatch:  # allow manual trigger from GitHub UI
+      - "v*" # Triggers on git tags matching v*, e.g. v0.1.0, v1.0.0
+  workflow_dispatch: # Allows manual triggering from GitHub Actions UI
 
 jobs:
-  # ── Step 1: Run full test suite ────────────────────────────────────────────
+  # ── Step 1: Quality Check & Tests ──────────────────────────────────────────
   test:
-    name: Tests (Python 3.12 / ubuntu)
+    name: Run Test Suite
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install package and dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Run tests
+      - name: Validate wordlists
+        run: python scripts/validate_wordlists.py
+
+      - name: Run pytest
         run: pytest --tb=short
 
-  # ── Step 2: Build wheel + sdist ────────────────────────────────────────────
+  # ── Step 2: Build package distributions (sdist & wheel) ────────────────────
   build:
-    name: Build distribution
+    name: Build sdist & wheel
+    needs: test
     runs-on: ubuntu-latest
-    needs: test           # only build if tests pass
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install build tools
+      - name: Install build module
         run: python -m pip install --upgrade pip build
 
-      - name: Validate wordlists before build
-        run: python scripts/validate_wordlists.py
-
-      - name: Build wheel and sdist
+      - name: Build sdist and wheel
         run: python -m build
 
-      - name: Upload build artifacts
+      - name: Upload distribution artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: pypi-dist
           path: dist/
 
-  # ── Step 3: Publish to TestPyPI ───────────────────────────────────────────
-  publish-testpypi:
-    name: Publish → TestPyPI
+  # ── Step 3: Publish to PyPI ────────────────────────────────────────────────
+  publish:
+    name: Publish package to PyPI
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/profanityx
     permissions:
-      id-token: write       # required for OIDC trusted publishing
+      id-token: write # Required for OIDC Trusted Publishing
 
     steps:
-      - name: Download build artifacts
+      - name: Download distribution artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: pypi-dist
           path: dist/
 
-      - name: Publish to TestPyPI (OIDC)
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
-          # Fallback: if OIDC trusted publishing is not configured,
-          # set repository secret PYPI_API_TOKEN and uncomment below:
-          # password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          # Works out-of-the-box with PyPI Trusted Publishing (OIDC).
+          # If using PYPI_API_TOKEN secret instead of OIDC, uncomment line below:
+          # password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
 
-  # ── Step 4: Publish to PyPI ───────────────────────────────────────────────
-  publish-pypi:
-    name: Publish → PyPI
-    needs: publish-testpypi
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/profanityx
-    permissions:
-      id-token: write       # required for OIDC trusted publishing
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Publish to PyPI (OIDC)
-        uses: pypa/gh-action-pypi-publish@release/v1
-        # Fallback: if OIDC trusted publishing is not configured, uncomment:
-        # with:
-        #   password: ${{ secrets.PYPI_API_TOKEN }}
-
-  # ── Step 5: Create GitHub Release ─────────────────────────────────────────
-  github-release:
+  # ── Step 4: Create GitHub Release ─────────────────────────────────────────
+  release:
     name: Create GitHub Release
-    needs: publish-pypi
+    needs: publish
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Download build artifacts
+      - name: Download distribution artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: pypi-dist
           path: dist/
 
       - name: Create GitHub Release
@@ -130,10 +106,9 @@ jobs:
           files: dist/*
           generate_release_notes: true
           body: |
-            ## Installation
+            ## ProfanityX Release ${{ github.ref_name }} 🚀
 
+            Install via pip:
             ```bash
             pip install profanityx==${{ github.ref_name }}
             ```
-
-            See [CHANGELOG](https://github.com/bahodirov07uz/profanityx/blob/main/CHANGELOG.md) for details.
